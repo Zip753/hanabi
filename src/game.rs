@@ -1,6 +1,6 @@
-use std::fmt::Display;
-
 use rand::seq::SliceRandom;
+
+mod display;
 
 const COLORS: usize = 5; // colors: red, green, yellow, blue, white
 const MAX_VALUE: u8 = 5; // values: 1, 2, 3, 4, 5
@@ -20,55 +20,6 @@ pub struct Game {
     errors: usize,
 }
 
-impl Display for Game {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for (idx, player) in self.players.iter().enumerate() {
-            writeln!(f, "Player {}: {}", idx + 1, player)?;
-        }
-        writeln!(f)?;
-
-        write!(f, "Table: ")?;
-        let mut iter = self.table.iter().enumerate().peekable();
-        while let Some((color, &color_value)) = iter.next() {
-            write!(f, "{}{}", COLOR_CODE[color], color_value)?;
-            if iter.peek().is_some() {
-                write!(f, " ")?;
-            }
-        }
-        writeln!(f)?;
-        writeln!(f)?;
-
-        let mut discard_amount = [[0; MAX_VALUE as usize]; COLORS];
-        for card in &self.discard {
-            discard_amount[card.color][card.value.as_idx()] += 1;
-        }
-
-        writeln!(f, "Discard pile")?;
-        for color in 0..COLORS {
-            for value in 1..=MAX_VALUE {
-                let value = CardValue(value);
-                let card = Card { color, value };
-                write!(
-                    f,
-                    "{}: {}/{}",
-                    card,
-                    discard_amount[color][value.as_idx()],
-                    NUM_VALUES[value.as_idx()]
-                )?;
-                if value.0 != MAX_VALUE {
-                    write!(f, ", ")?;
-                }
-            }
-            writeln!(f)?;
-        }
-        writeln!(f)?;
-
-        writeln!(f, "Remaining hints: {}", self.hints)?;
-        writeln!(f, "Remaining errors: {}", self.errors)?;
-        Ok(())
-    }
-}
-
 #[derive(Default, Copy, Clone)]
 pub struct Card {
     color: usize,
@@ -78,30 +29,9 @@ pub struct Card {
 #[derive(Copy, Clone, Default)]
 struct CardValue(u8);
 
-impl Display for CardValue {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
-
 impl CardValue {
     pub fn as_idx(&self) -> usize {
         (self.0 - 1) as usize
-    }
-}
-
-impl Display for Card {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        // let color_name: Cow<'_, str> = match self.color {
-        //     0 => "red".into(),
-        //     1 => "green".into(),
-        //     2 => "yellow".into(),
-        //     3 => "blue".into(),
-        //     4 => "white".into(),
-        //     n => format!("<invalid ({})>", n).into(),
-        // };
-        let color_name = COLOR_CODE.get(self.color).unwrap_or(&"?");
-        write!(f, "{}{}", color_name, self.value)
     }
 }
 
@@ -109,24 +39,10 @@ pub struct Player {
     hand: [CardWithInformation; HAND],
 }
 
-impl Display for Player {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let cards: Vec<String> = self.hand.iter().map(|h| h.card.to_string()).collect();
-        write!(f, "{}", cards.join(", "))
-    }
-}
-
 #[derive(Default)]
 pub struct CardWithInformation {
     card: Card,
     information: Vec<Information>,
-}
-
-impl Display for CardWithInformation {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        // TODO: information
-        write!(f, "{}", self.card)
-    }
 }
 
 pub struct Information {
