@@ -1,6 +1,7 @@
 use rand::seq::SliceRandom;
 
 mod display;
+mod play;
 
 const COLORS: usize = 5; // colors: red, green, yellow, blue, white
 const MAX_VALUE: u8 = 5; // values: 1, 2, 3, 4, 5
@@ -16,17 +17,18 @@ pub struct Game {
     discard: Vec<Card>,
     draw: Vec<Card>,
     players: Vec<Player>,
+    current_player: usize,
     hints: usize,
     errors: usize,
 }
 
-#[derive(Default, Copy, Clone)]
+#[derive(Default, Copy, Clone, PartialEq)]
 pub struct Card {
     color: usize,
     value: CardValue,
 }
 
-#[derive(Copy, Clone, Default)]
+#[derive(Copy, Clone, Default, PartialEq)]
 struct CardValue(u8);
 
 impl CardValue {
@@ -86,6 +88,7 @@ impl Game {
             discard: vec![],
             table: [0; COLORS],
             players,
+            current_player: 0,
             draw: all_cards.split_off(num_players * HAND),
         }
     }

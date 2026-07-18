@@ -5,7 +5,17 @@ use super::*;
 impl Display for Game {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         for (idx, player) in self.players.iter().enumerate() {
-            writeln!(f, "Player {}: {}", idx + 1, player)?;
+            writeln!(
+                f,
+                "{}Player {}: {}",
+                if idx == self.current_player {
+                    "-> "
+                } else {
+                    ""
+                },
+                idx + 1,
+                player
+            )?;
         }
         writeln!(f)?;
 
@@ -46,7 +56,7 @@ impl Display for Game {
         writeln!(f)?;
 
         writeln!(f, "Remaining hints: {}", self.hints)?;
-        writeln!(f, "Remaining errors: {}", self.errors)?;
+        write!(f, "Remaining errors: {}", self.errors)?;
         Ok(())
     }
 }
@@ -71,7 +81,6 @@ impl Display for Card {
         write!(f, "{}{}", color_name, self.value)
     }
 }
-
 
 impl Display for Player {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
