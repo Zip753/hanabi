@@ -13,7 +13,7 @@ const COLOR_CODE: [&'static str; COLORS] = ["R", "G", "Y", "B", "W"];
 const NUM_VALUES: [u8; MAX_VALUE as usize] = [3, 2, 2, 2, 1];
 
 pub struct Game {
-    table: [usize; COLORS],
+    table: [u8; COLORS],
     discard: Vec<Card>,
     draw: Vec<Card>,
     players: Vec<Player>,

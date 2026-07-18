@@ -8,16 +8,6 @@ use super::*;
 //   - hints -= 1
 //   - calculate the list of cards for which the information is true for hinted player
 //   - add respective information to each card in their hand
-// - play(card in hand)
-//   - check table state of card's color
-//   - if state + 1 is card's value
-//      - table state += 1
-//   - else
-//      - add card to discard pile
-//      - errors -= 1
-//      - if errors == 0
-//          - game ends instantly
-//   - draw one card to replace the discarded one
 // player moves to the next one
 //
 // so one move can result in:
@@ -57,6 +47,47 @@ impl Game {
             .count();
         if discarded_count as u8 == NUM_VALUES[discarded_card.value.as_idx()] {
             todo!("game failed!")
+        }
+
+        let next_card = self.draw.pop();
+        match next_card {
+            Some(card) => {
+                current_player.hand[card_idx] = CardWithInformation {
+                    card,
+                    information: vec![],
+                }
+            }
+            None => {
+                todo!("figure out how to handle empty draw pile later")
+            }
+        }
+
+        self.current_player = (self.current_player + 1) % self.players.len();
+    }
+
+    // - play(card in hand)
+    //   - check table state of card's color
+    //   - if state + 1 is card's value
+    //      - table state += 1
+    //   - else
+    //      - add card to discard pile
+    //      - errors -= 1
+    //      - if errors == 0
+    //          - game ends instantly
+    //   - draw one card to replace the discarded one
+    pub fn play(&mut self, card_idx: usize) {
+        let current_player = &mut self.players[self.current_player];
+        let played_card = current_player.hand[card_idx].card;
+
+        let table_value = self.table[played_card.color];
+        if table_value + 1 == played_card.value.0 {
+            self.table[played_card.color] += 1;
+        } else {
+            self.discard.push(played_card);
+            self.errors -= 1;
+            if self.errors == 0 {
+                todo!("game failed!")
+            }
         }
 
         let next_card = self.draw.pop();
