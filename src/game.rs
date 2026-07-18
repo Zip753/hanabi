@@ -7,7 +7,7 @@ const COLORS: usize = 5; // colors: red, green, yellow, blue, white
 const MAX_VALUE: u8 = 5; // values: 1, 2, 3, 4, 5
 const HAND: usize = 5; // how many cards are on hand at any time
 
-const COLOR_CODE: [&'static str; COLORS] = ["R", "G", "Y", "B", "W"];
+pub const COLOR_CODE: [&'static str; COLORS] = ["R", "G", "Y", "B", "W"];
 
 // How much of each value of a given color there is in the whole deck
 const NUM_VALUES: [u8; MAX_VALUE as usize] = [3, 2, 2, 2, 1];
@@ -29,7 +29,7 @@ pub struct Card {
 }
 
 #[derive(Copy, Clone, Default, PartialEq)]
-struct CardValue(u8);
+pub struct CardValue(u8);
 
 impl CardValue {
     pub fn as_idx(&self) -> usize {
@@ -49,12 +49,12 @@ pub struct CardWithInformation {
 
 pub struct Information {
     kind: InformationKind,
-    matches: bool,
 }
 
+#[derive(Clone, Copy)]
 pub enum InformationKind {
-    Value,
-    Color,
+    Value(CardValue),
+    Color(usize),
 }
 
 impl Game {

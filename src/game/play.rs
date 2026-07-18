@@ -1,13 +1,6 @@
 use super::*;
 
 // current player makes move
-// - hint(player, information{color X or value U})
-//   ! no need for the card list, since info is enough to derive to which cards it applies
-//   - check if hints > 0
-//      - if no, disallow move
-//   - hints -= 1
-//   - calculate the list of cards for which the information is true for hinted player
-//   - add respective information to each card in their hand
 // player moves to the next one
 //
 // so one move can result in:
@@ -101,6 +94,29 @@ impl Game {
             None => {
                 todo!("figure out how to handle empty draw pile later")
             }
+        }
+
+        self.current_player = (self.current_player + 1) % self.players.len();
+    }
+
+    // - hint(player, information{color X or value U})
+    //   ! no need for the card list, since info is enough to derive to which cards it applies
+    //   - check if hints > 0
+    //      - if no, disallow move
+    //   - hints -= 1
+    //   - calculate the list of cards for which the information is true for hinted player
+    //   - add respective information to each card in their hand
+    pub fn hint(&mut self, player_idx: usize, information_kind: InformationKind) {
+        if self.hints == 0 {
+            todo!("invalid move - out of hints!")
+        }
+        self.hints -= 1;
+
+        let hinted_player = &mut self.players[player_idx];
+        for card_with_info in &mut hinted_player.hand {
+            card_with_info.information.push(Information {
+                kind: information_kind,
+            });
         }
 
         self.current_player = (self.current_player + 1) % self.players.len();

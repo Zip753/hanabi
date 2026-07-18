@@ -84,14 +84,36 @@ impl Display for Card {
 
 impl Display for Player {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let cards: Vec<String> = self.hand.iter().map(|h| h.card.to_string()).collect();
+        let cards: Vec<String> = self.hand.iter().map(|h| h.to_string()).collect();
         write!(f, "{}", cards.join(", "))
     }
 }
 
 impl Display for CardWithInformation {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        // TODO: information
-        write!(f, "{}", self.card)
+        write!(f, "{}", self.card)?;
+        if self.information.len() == 0 {
+            return Ok(());
+        }
+
+        write!(f, "[")?;
+        let mut iter = self.information.iter().peekable();
+        while let Some(info) = iter.next() {
+            let matches = match info.kind {
+                InformationKind::Value(value) => value == self.card.value,
+                InformationKind::Color(color) => color == self.card.color,
+            };
+            if matches {
+                write!(f, "+")?;
+            } else {
+                write!(f, "-")?;
+            }
+            match info.kind {
+                InformationKind::Value(value) => write!(f, "{}", value),
+                InformationKind::Color(color) => write!(f, "{}", COLOR_CODE[color]),
+            }?;
+        }
+        write!(f, "]")?;
+        Ok(())
     }
 }
