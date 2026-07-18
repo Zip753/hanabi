@@ -1,3 +1,5 @@
+use std::{borrow::Cow, fmt::Display};
+
 use rand::seq::SliceRandom;
 
 const COLORS: usize = 5; // colors: red, green, yellow, blue, white
@@ -18,20 +20,57 @@ pub struct Game {
     errors: usize,
 }
 
+impl Display for Game {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for (idx, player) in self.players.iter().enumerate() {
+            write!(f, "Player {}: {}\n", idx + 1, player)?
+        }
+        Ok(())
+    }
+}
+
 #[derive(Default, Copy, Clone)]
 pub struct Card {
     color: usize,
     value: usize,
 }
 
+impl Display for Card {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let color_name: Cow<'_, str> = match self.color {
+            0 => "red".into(),
+            1 => "green".into(),
+            2 => "yellow".into(),
+            3 => "blue".into(),
+            4 => "white".into(),
+            n => format!("<invalid ({})>", n).into(),
+        };
+        write!(f, "{} {}", color_name, self.value + 1)
+    }
+}
+
 pub struct Player {
     hand: [CardWithInformation; HAND],
+}
+
+impl Display for Player {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let cards: Vec<String> = self.hand.iter().map(|h| h.card.to_string()).collect();
+        write!(f, "{}", cards.join(", "))
+    }
 }
 
 #[derive(Default)]
 pub struct CardWithInformation {
     card: Card,
     information: Vec<Information>,
+}
+
+impl Display for CardWithInformation {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // TODO: information
+        write!(f, "{}", self.card)
+    }
 }
 
 pub struct Information {
@@ -78,6 +117,13 @@ impl Game {
             table: [0; COLORS],
             players,
             draw: all_cards.split_off(num_players * HAND),
+        }
+    }
+
+    pub fn show_state(&self) -> () {
+        println!("Players: {}", self.players.len());
+        for (idx, player) in self.players.iter().enumerate() {
+               // println!("Player {}: [{}] (info coming later)", idx + 1, player.hand.map(|&h| h.card).join());
         }
     }
 }
