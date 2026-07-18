@@ -1,15 +1,15 @@
-use std::{borrow::Cow, fmt::Display};
+use std::fmt::Display;
 
 use rand::seq::SliceRandom;
 
 const COLORS: usize = 5; // colors: red, green, yellow, blue, white
-const VALUES: usize = 5; // values: 1, 2, 3, 4, 5
+const MAX_VALUE: u8 = 5; // values: 1, 2, 3, 4, 5
 const HAND: usize = 5; // how many cards are on hand at any time
 
+const COLOR_CODE: [&'static str; COLORS] = ["R", "G", "Y", "B", "W"];
+
 // How much of each value of a given color there is in the whole deck
-const NUM_VALUES: [usize; VALUES] = [
-    3, 2, 2, 2, 1
-];
+const NUM_VALUES: [u8; MAX_VALUE as usize] = [3, 2, 2, 2, 1];
 
 pub struct Game {
     table: [usize; COLORS],
@@ -23,8 +23,48 @@ pub struct Game {
 impl Display for Game {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         for (idx, player) in self.players.iter().enumerate() {
-            write!(f, "Player {}: {}\n", idx + 1, player)?
+            writeln!(f, "Player {}: {}", idx + 1, player)?;
         }
+        writeln!(f)?;
+
+        write!(f, "Table: ")?;
+        let mut iter = self.table.iter().enumerate().peekable();
+        while let Some((color, &color_value)) = iter.next() {
+            write!(f, "{}{}", COLOR_CODE[color], color_value)?;
+            if iter.peek().is_some() {
+                write!(f, " ")?;
+            }
+        }
+        writeln!(f)?;
+        writeln!(f)?;
+
+        let mut discard_amount = [[0; MAX_VALUE as usize]; COLORS];
+        for card in &self.discard {
+            discard_amount[card.color][card.value.as_idx()] += 1;
+        }
+
+        writeln!(f, "Discard pile")?;
+        for color in 0..COLORS {
+            for value in 1..=MAX_VALUE {
+                let value = CardValue(value);
+                let card = Card { color, value };
+                write!(
+                    f,
+                    "{}: {}/{}",
+                    card,
+                    discard_amount[color][value.as_idx()],
+                    NUM_VALUES[value.as_idx()]
+                )?;
+                if value.0 != MAX_VALUE {
+                    write!(f, ", ")?;
+                }
+            }
+            writeln!(f)?;
+        }
+        writeln!(f)?;
+
+        writeln!(f, "Remaining hints: {}", self.hints)?;
+        writeln!(f, "Remaining errors: {}", self.errors)?;
         Ok(())
     }
 }
@@ -32,20 +72,36 @@ impl Display for Game {
 #[derive(Default, Copy, Clone)]
 pub struct Card {
     color: usize,
-    value: usize,
+    value: CardValue,
+}
+
+#[derive(Copy, Clone, Default)]
+struct CardValue(u8);
+
+impl Display for CardValue {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl CardValue {
+    pub fn as_idx(&self) -> usize {
+        (self.0 - 1) as usize
+    }
 }
 
 impl Display for Card {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let color_name: Cow<'_, str> = match self.color {
-            0 => "red".into(),
-            1 => "green".into(),
-            2 => "yellow".into(),
-            3 => "blue".into(),
-            4 => "white".into(),
-            n => format!("<invalid ({})>", n).into(),
-        };
-        write!(f, "{} {}", color_name, self.value + 1)
+        // let color_name: Cow<'_, str> = match self.color {
+        //     0 => "red".into(),
+        //     1 => "green".into(),
+        //     2 => "yellow".into(),
+        //     3 => "blue".into(),
+        //     4 => "white".into(),
+        //     n => format!("<invalid ({})>", n).into(),
+        // };
+        let color_name = COLOR_CODE.get(self.color).unwrap_or(&"?");
+        write!(f, "{}{}", color_name, self.value)
     }
 }
 
@@ -87,12 +143,10 @@ impl Game {
     pub fn new(num_players: usize) -> Self {
         let mut all_cards: Vec<Card> = vec![];
         for color in 0..COLORS {
-            for value in 0..VALUES {
-                for _ in 0..NUM_VALUES[value] {
-                    all_cards.push(Card {
-                        color,
-                        value,
-                    })
+            for value in 1..=MAX_VALUE {
+                let value = CardValue(value);
+                for _ in 0..NUM_VALUES[value.as_idx()] {
+                    all_cards.push(Card { color, value })
                 }
             }
         }
@@ -117,13 +171,6 @@ impl Game {
             table: [0; COLORS],
             players,
             draw: all_cards.split_off(num_players * HAND),
-        }
-    }
-
-    pub fn show_state(&self) -> () {
-        println!("Players: {}", self.players.len());
-        for (idx, player) in self.players.iter().enumerate() {
-               // println!("Player {}: [{}] (info coming later)", idx + 1, player.hand.map(|&h| h.card).join());
         }
     }
 }
