@@ -2,6 +2,7 @@ use rand::seq::SliceRandom;
 
 mod display;
 mod play;
+pub mod tui;
 
 const COLORS: usize = 5; // colors: red, green, yellow, blue, white
 const MAX_VALUE: u8 = 5; // values: 1, 2, 3, 4, 5

@@ -1,8 +1,4 @@
-mod game;
-
-use game::Game;
-
-use crate::game::InformationKind;
+use hanabi::game::{self, Game, InformationKind};
 
 fn main() {
     let num_players = 3;
