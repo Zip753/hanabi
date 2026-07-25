@@ -106,8 +106,8 @@ impl Widget for &App {
                 })
                 .padding(Padding::uniform(1))
                 .title_top(format!("player {}", idx + 1))
-                .title_style(if is_current_player {
-                    Style::new().green().bold()
+                .style(if is_current_player {
+                    Style::new().light_green().bold()
                 } else {
                     Style::new()
                 })
