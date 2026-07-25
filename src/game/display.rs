@@ -1,6 +1,49 @@
-use std::fmt::Display;
+use std::{fmt::Display, ops::Deref};
 
 use super::*;
+
+pub struct DiscardMatrix([[u8; MAX_VALUE as usize]; COLORS]);
+
+impl Deref for DiscardMatrix {
+    type Target = [[u8; MAX_VALUE as usize]; COLORS];
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl Display for DiscardMatrix {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for color in 0..COLORS {
+            for value in 1..=MAX_VALUE {
+                let value = CardValue(value);
+                let card = Card { color, value };
+                write!(
+                    f,
+                    "{}: {}/{}",
+                    card,
+                    self.0[color][value.as_idx()],
+                    NUM_VALUES[value.as_idx()]
+                )?;
+                if value.0 != MAX_VALUE {
+                    write!(f, ", ")?;
+                }
+            }
+            writeln!(f)?;
+        }
+        Ok(())
+    }
+}
+
+impl Game {
+    pub fn get_discard_matrix(&self) -> DiscardMatrix {
+        let mut discard_matrix = [[0u8; MAX_VALUE as usize]; COLORS];
+        for card in &self.discard {
+            discard_matrix[card.color][card.value.as_idx()] += 1;
+        }
+        DiscardMatrix(discard_matrix)
+    }
+}
 
 impl Display for Game {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -30,29 +73,9 @@ impl Display for Game {
         writeln!(f)?;
         writeln!(f)?;
 
-        let mut discard_amount = [[0; MAX_VALUE as usize]; COLORS];
-        for card in &self.discard {
-            discard_amount[card.color][card.value.as_idx()] += 1;
-        }
-
         writeln!(f, "Discard pile")?;
-        for color in 0..COLORS {
-            for value in 1..=MAX_VALUE {
-                let value = CardValue(value);
-                let card = Card { color, value };
-                write!(
-                    f,
-                    "{}: {}/{}",
-                    card,
-                    discard_amount[color][value.as_idx()],
-                    NUM_VALUES[value.as_idx()]
-                )?;
-                if value.0 != MAX_VALUE {
-                    write!(f, ", ")?;
-                }
-            }
-            writeln!(f)?;
-        }
+        let discard_matrix = self.get_discard_matrix();
+        discard_matrix.fmt(f)?;
         writeln!(f)?;
 
         writeln!(f, "Remaining hints: {}", self.hints)?;

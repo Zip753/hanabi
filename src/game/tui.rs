@@ -1,16 +1,27 @@
-use std::io;
+use std::{borrow::Cow, io};
 
 use crossterm::event::{self, Event};
 use ratatui::{
     DefaultTerminal, Frame,
     layout::{Constraint, Flex, Layout, Offset, Size},
     style::Style,
-    symbols,
+    symbols::{self, border},
     text::Line,
     widgets::{Block, BorderType, Padding, Paragraph, Widget},
 };
 
-use crate::game::Game;
+use crate::game::{COLORS, Game};
+
+const ROUNDED_DASHED: border::Set<'static> = border::Set {
+    top_left: "╭",
+    top_right: "╮",
+    bottom_left: "╰",
+    bottom_right: "╯",
+    vertical_left: "╎",
+    vertical_right: "╎",
+    horizontal_top: "╌",
+    horizontal_bottom: "╌",
+};
 
 pub struct App {
     exit: bool,
@@ -149,6 +160,73 @@ impl Widget for &App {
             .block(Block::bordered().border_type(BorderType::Rounded))
             .render(tokens_layout[2], buf);
 
-        Paragraph::new("col3").render(cols[2], buf);
+        let table_discard_layout =
+            Layout::vertical([Constraint::Length(11), Constraint::Length(9)])
+                .flex(Flex::Center)
+                .spacing(1)
+                .split(cols[2]);
+
+        let table_layout = table_discard_layout[0];
+        Block::bordered()
+            .border_type(BorderType::QuadrantOutside)
+            .padding(Padding::symmetric(1, 1))
+            .render(table_layout, buf);
+        let inner_table_layout = table_layout
+            .resize(Size::new(table_layout.width - 2, table_layout.height - 2))
+            + Offset::new(1, 1);
+        let table_card_layout = Layout::horizontal(vec![Constraint::Length(5); COLORS])
+            .flex(Flex::Center)
+            .spacing(3)
+            .split(inner_table_layout);
+        for (color, rect) in table_card_layout.iter().enumerate() {
+            let style = match color {
+                0 => Style::new().red(),
+                1 => Style::new().green(),
+                2 => Style::new().yellow(),
+                3 => Style::new().blue(),
+                4 => Style::new().white(),
+                _ => unreachable!(),
+            };
+
+            // let value = self.game.table[color];
+            let value = color;
+
+            if value == 0 {
+                Block::bordered()
+                    .border_set(ROUNDED_DASHED)
+                    .style(style)
+                    .padding(Padding::uniform(1))
+                    .render(rect.resize(Size::new(5, 5)), buf);
+                continue;
+            }
+
+            for i in 0..value {
+                let text: Cow<'_, str> = if i == value - 1 {
+                    value.to_string().into()
+                } else {
+                    "".into()
+                };
+                let rendered_height = if i == value - 1 { 5 } else { 1 };
+                Paragraph::new(text)
+                    .block(
+                        Block::bordered()
+                            .border_type(BorderType::Rounded)
+                            .padding(Padding::uniform(1))
+                            .style(style),
+                    )
+                    .render(
+                        rect.resize(Size::new(5, rendered_height)) + Offset::new(0, i as i32),
+                        buf,
+                    );
+            }
+        }
+        Paragraph::new(self.game.get_discard_matrix().to_string())
+            .centered()
+            .block(
+                Block::bordered()
+                    .border_type(BorderType::HeavyTripleDashed)
+                    .padding(Padding::symmetric(1, 1)),
+            )
+            .render(table_discard_layout[1], buf);
     }
 }
