@@ -85,7 +85,7 @@ impl Display for Card {
 impl Display for Player {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let cards: Vec<String> = self.hand.iter().map(|h| h.to_string()).collect();
-        write!(f, "{}", cards.join(", "))
+        write!(f, "{}", cards.join(" "))
     }
 }
 

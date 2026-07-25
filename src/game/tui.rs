@@ -3,10 +3,11 @@ use std::io;
 use crossterm::event::{self, Event};
 use ratatui::{
     DefaultTerminal, Frame,
-    layout::{Constraint, Flex, Layout},
+    layout::{Constraint, Flex, Layout, Offset, Size},
     style::Style,
     symbols,
-    widgets::{Block, Padding, Paragraph, Widget},
+    text::Line,
+    widgets::{Block, BorderType, Padding, Paragraph, Widget},
 };
 
 use crate::game::Game;
@@ -56,9 +57,10 @@ impl Widget for &App {
     {
         let cols = Layout::horizontal([
             Constraint::Fill(1),
-            Constraint::Length(10),
+            Constraint::Length(5),
             Constraint::Fill(1),
         ])
+        .spacing(1)
         .split(area);
 
         let players_layout = Layout::vertical([
@@ -98,7 +100,55 @@ impl Widget for &App {
                 .render(row, buf);
         }
 
-        Paragraph::new("col2").render(cols[1], buf);
+        let tokens_layout = Layout::vertical([
+            Constraint::Length(6),
+            Constraint::Length(4),
+            Constraint::Length(5),
+        ])
+        .flex(Flex::Center)
+        .spacing(1)
+        .split(cols[1]);
+
+        let mut hints: Vec<Line> = vec![];
+        for i in 0..4 {
+            let first_char = if i < self.game.hints { "O" } else { "X" };
+            let second_char = if i + 4 < self.game.hints { "O" } else { "X" };
+            hints.push(format!("{} {}", first_char, second_char).into());
+        }
+        Paragraph::new(vec![
+            Line::from("O O"),
+            Line::from("O O"),
+            Line::from("O O"),
+            Line::from("O O"),
+        ])
+        .centered()
+        .style(Style::new().blue())
+        .block(Block::bordered().border_type(BorderType::Rounded))
+        .render(tokens_layout[0], buf);
+
+        let card_rect = tokens_layout[1];
+        let card_rect = card_rect.resize(Size::new(card_rect.width - 1, card_rect.height - 1));
+        Block::bordered()
+            .border_type(BorderType::Rounded)
+            .render(card_rect, buf);
+        Paragraph::new(self.game.draw.len().to_string())
+            .block(Block::bordered().border_type(BorderType::Rounded))
+            .render(card_rect + Offset::new(1, 1), buf);
+
+        let mut errors: Vec<Line> = vec![];
+        for i in 0..3 {
+            if i < self.game.errors {
+                errors.push("O".into());
+            } else {
+                errors.push("X".into());
+            }
+        }
+        Paragraph::new(errors)
+            .centered()
+            .style(Style::new().red())
+            .block(Block::bordered().border_type(BorderType::Rounded))
+            .render(tokens_layout[2], buf);
+
         Paragraph::new("col3").render(cols[2], buf);
     }
 }
