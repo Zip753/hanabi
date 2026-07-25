@@ -10,7 +10,7 @@ use ratatui::{
     widgets::{Block, BorderType, Padding, Paragraph, Widget},
 };
 
-use crate::game::{COLORS, Game};
+use crate::game::{COLORS, Game, HAND};
 
 const ROUNDED_DASHED: border::Set<'static> = border::Set {
     top_left: "╭",
@@ -22,6 +22,17 @@ const ROUNDED_DASHED: border::Set<'static> = border::Set {
     horizontal_top: "╌",
     horizontal_bottom: "╌",
 };
+
+fn border_color(color: usize) -> Style {
+    match color {
+        0 => Style::new().red(),
+        1 => Style::new().green(),
+        2 => Style::new().yellow(),
+        3 => Style::new().blue(),
+        4 => Style::new().white(),
+        _ => unreachable!(),
+    }
+}
 
 pub struct App {
     exit: bool,
@@ -74,14 +85,10 @@ impl Widget for &App {
         .spacing(1)
         .split(area);
 
-        let players_layout = Layout::vertical([
-            Constraint::Length(5),
-            Constraint::Length(5),
-            Constraint::Length(5),
-        ])
-        .flex(Flex::Center)
-        .spacing(1)
-        .split(cols[0]);
+        let players_layout = Layout::vertical(vec![Constraint::Length(7); self.game.players.len()])
+            .flex(Flex::Center)
+            .spacing(1)
+            .split(cols[0]);
 
         for (idx, (player, &row)) in self
             .game
@@ -91,24 +98,40 @@ impl Widget for &App {
             .enumerate()
         {
             let is_current_player = idx == self.game.current_player;
-            Paragraph::new(player.to_string())
-                .centered()
-                .block(
-                    Block::bordered()
-                        .border_set(if is_current_player {
-                            symbols::border::DOUBLE
-                        } else {
-                            symbols::border::PLAIN
-                        })
-                        .padding(Padding::symmetric(1, 1))
-                        .title_top(format!("player {}", idx + 1))
-                        .title_style(if is_current_player {
-                            Style::new().green().bold()
-                        } else {
-                            Style::new()
-                        }),
-                )
+            Block::bordered()
+                .border_set(if is_current_player {
+                    symbols::border::DOUBLE
+                } else {
+                    symbols::border::PLAIN
+                })
+                .padding(Padding::uniform(1))
+                .title_top(format!("player {}", idx + 1))
+                .title_style(if is_current_player {
+                    Style::new().green().bold()
+                } else {
+                    Style::new()
+                })
                 .render(row, buf);
+
+            let inner_row =
+                row.resize(Size::new(row.width - 2, row.height - 2)) + Offset::new(1, 1);
+
+            let player_layout = Layout::horizontal(vec![Constraint::Length(5); HAND])
+                .flex(Flex::Center)
+                .spacing(3)
+                .split(inner_row);
+
+            for (card_with_info, &area) in player.hand.iter().zip(player_layout.iter()) {
+                let card = card_with_info.card;
+                Paragraph::new(card.value.to_string())
+                    .block(
+                        Block::bordered()
+                            .border_type(BorderType::Rounded)
+                            .padding(Padding::uniform(1))
+                            .style(border_color(card.color)),
+                    )
+                    .render(area, buf);
+            }
         }
 
         let tokens_layout = Layout::vertical([
@@ -179,22 +202,13 @@ impl Widget for &App {
             .spacing(3)
             .split(inner_table_layout);
         for (color, rect) in table_card_layout.iter().enumerate() {
-            let style = match color {
-                0 => Style::new().red(),
-                1 => Style::new().green(),
-                2 => Style::new().yellow(),
-                3 => Style::new().blue(),
-                4 => Style::new().white(),
-                _ => unreachable!(),
-            };
-
             // let value = self.game.table[color];
             let value = color;
 
             if value == 0 {
                 Block::bordered()
                     .border_set(ROUNDED_DASHED)
-                    .style(style)
+                    .style(border_color(color))
                     .padding(Padding::uniform(1))
                     .render(rect.resize(Size::new(5, 5)), buf);
                 continue;
@@ -212,7 +226,7 @@ impl Widget for &App {
                         Block::bordered()
                             .border_type(BorderType::Rounded)
                             .padding(Padding::uniform(1))
-                            .style(style),
+                            .style(border_color(color)),
                     )
                     .render(
                         rect.resize(Size::new(5, rendered_height)) + Offset::new(0, i as i32),
